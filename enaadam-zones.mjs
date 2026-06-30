@@ -6,8 +6,12 @@
 // number is in TARGET_ZONES and clicks them.
 
 // ── Price-tier colors (zone fill = price tier) ────────────────────
+// Prices CONFIRMED CURRENT for the live event (2026-07-01). The seats.png
+// screenshot showed a different ladder (105,000/52,500) but that was a PREVIOUS
+// event — ignore it. The automation NEVER reads price: it keys purely on the
+// tier `rgb` colors and on seat-availability color, so price is just a label.
 export const PRICE_COLORS = {
-  red: { rgb: 'rgb(194, 58, 57)', price: '157,500 ₮' },     // ← the one we click
+  red: { rgb: 'rgb(194, 58, 57)', price: '157,500 ₮' },     // ← top tier, the one we click
   green: { rgb: 'rgb(89, 146, 34)', price: '136,500 ₮' },
   blue: { rgb: 'rgb(0, 50, 160)', price: '136,500 ₮' },
   purple: { rgb: 'rgb(111, 53, 177)', price: '84,000 ₮' },
