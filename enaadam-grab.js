@@ -26,7 +26,7 @@ import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { getEnaadamAccounts } from './enaadam-accounts.mjs';
-import { TICKET_URL, delay } from './lib/enaadam-login.mjs';
+import { TICKET_URL, delay, isLoggedIn } from './lib/enaadam-login.mjs';
 import { TARGET_COLOR, TARGET_ZONES, STATUS_COLORS } from './enaadam-zones.mjs';
 
 // Global crash guards — a stray rejection/exception must NEVER kill the run.
@@ -52,6 +52,7 @@ const SEAT_PASS_MS = Number(process.env.SEAT_PASS_MS || 12_000);      // per-zon
 const NAV_TIMEOUT = Number(process.env.NAV_TIMEOUT || 30_000);
 const ACTION_TIMEOUT = Number(process.env.ACTION_TIMEOUT || 8_000);
 const COLOR_TOL = Number(process.env.COLOR_TOL || 16);
+const STATUS_EVERY_MS = Number(process.env.STATUS_EVERY_MS || 15_000); // heartbeat cadence while watching
 
 // "Сагслах" (add-to-cart) button — the ONLY required click. Tolerant of variants.
 const SAGSLAH_PATTERN = /сагсл?ах|сагс(ан)?д нэмэх/i;
@@ -401,6 +402,9 @@ async function grabForAccount(acc, slot = 0, total = 1) {
   let carted = 0, usedZone = null;
   let calibrated = false, redColor = TARGET_COLOR, availColor = STATUS_COLORS.available;
   let everLive = false;
+  let warnedLogin = false, loggedOut = false, diagnosed = false;
+  const startedAt = Date.now();
+  let lastBeat = startedAt;
 
   async function ensureBrowser() {
     if (page && !page.isClosed()) return;
@@ -424,7 +428,21 @@ async function grabForAccount(acc, slot = 0, total = 1) {
         // ── PHASE 1: WATCH ── reload until the seat map is live ──────
         const live = await page.evaluate(pageEventLive).catch(() => false);
         if (!live) {
-          // not published yet (or skeleton) — refresh this browser and re-check
+          // Why not live? Tell "logged out / on /auth" apart from "not published
+          // yet / skeleton" so a dead session can't masquerade as a normal wait.
+          const onAuth = /\/auth(\/|$)/.test(page.url());
+          const authed = onAuth ? false : await isLoggedIn(page).catch(() => true);
+          loggedOut = !authed;
+          if (loggedOut && !warnedLogin) {
+            warnedLogin = true;
+            console.log(`  🔴 ${tag} NOT LOGGED IN (session expired or on /auth). Log in in this window, or run:  node enaadam-login.js ${acc.index}`);
+          }
+          if (!loggedOut) warnedLogin = false; // recovered — operator logged in
+          const now = Date.now();
+          if (now - lastBeat >= STATUS_EVERY_MS) {
+            lastBeat = now;
+            console.log(`  ⏳ ${tag} ${loggedOut ? 'WAITING FOR LOGIN' : 'watching for go-live'} — ${((now - startedAt) / 60000).toFixed(1)}m elapsed`);
+          }
           await safeGoto(page, EVENT_URL);
           await delay(WATCH_POLL_MS + Math.floor(Math.random() * 400));
           continue;
@@ -450,6 +468,19 @@ async function grabForAccount(acc, slot = 0, total = 1) {
         if (pass.usedZone != null && usedZone == null) usedZone = pass.usedZone;
         if (carted >= MAX_TICKETS) break;
 
+        // Real-time debug: LIVE but no RED target zone was found → almost always a
+        // selector/color mismatch vs the real DOM. Dump everything needed to fix
+        // it fast (screenshot + DOM + the actual seat/button selectors), once.
+        if (everLive && !pass.sawAnyZone && carted === 0 && !diagnosed) {
+          diagnosed = true;
+          console.log(`  🔬 ${tag} LIVE but found NO red target zone — likely a selector/color mismatch. Dumping diagnostics…`);
+          await shot(page, `${tag}-no-zone.png`);
+          try { fs.writeFileSync(path.join(SHOTS_DIR, `${tag}-dom.html`), await page.content(), 'utf8'); } catch { /* */ }
+          const probe = await page.evaluate(pageProbeSelectors).catch(() => null);
+          if (probe) { try { fs.writeFileSync(path.join(SHOTS_DIR, `${tag}-selectors.json`), JSON.stringify(probe, null, 2), 'utf8'); } catch { /* */ } }
+          console.log(`  🔬 ${tag} wrote grab-shots/${tag}-no-zone.png + ${tag}-dom.html + ${tag}-selectors.json — share these to fix selectors fast.`);
+        }
+
         // didn't fill up — refresh for fresh availability and sweep again.
         // (No cart yet → hard reload; some carted → soft back-nav to protect it.)
         if (carted === 0) { await safeGoto(page, EVENT_URL); await delay(WATCH_POLL_MS); }
@@ -470,7 +501,7 @@ async function grabForAccount(acc, slot = 0, total = 1) {
       console.log(`  ✅ ${tag} ${carted} seat(s) IN CART (zone ${usedZone}). 💳 PAY NOW — window left open.`);
       return { acc, status: `cart:zone${usedZone}:${carted}seat`, context };
     }
-    return { acc, status: everLive ? 'no_seats_in_budget' : 'event_never_live' };
+    return { acc, status: everLive ? 'no_seats_in_budget' : (loggedOut ? 'not_logged_in' : 'event_never_live') };
   } catch (e) {
     await shot(page, `${tag}-error.png`).catch(() => {});
     return { acc, status: `error:${(e?.message || e).toString().slice(0, 80)}` };
@@ -522,17 +553,33 @@ async function main() {
     r.status === 'fulfilled' ? r.value : { acc: accounts[i], status: `crash:${(r.reason?.message || r.reason).toString().slice(0, 60)}` });
 
   console.log('\n──── Grab summary ────');
-  for (const r of results) console.log(`  ${r.status.startsWith('cart:') ? '✅' : '·'} acc${r.acc.index} (${r.acc.mobile}): ${r.status}`);
+  for (const r of results) {
+    const icon = r.status.startsWith('cart:') ? '✅'
+      : r.status === 'not_logged_in' ? '🔴'
+      : r.status.startsWith('error') || r.status.startsWith('crash') ? '💥' : '·';
+    console.log(`  ${icon} acc${r.acc.index} (${r.acc.mobile}): ${r.status}`);
+  }
   const carted = results.filter((r) => r.status.startsWith('cart:'));
+  const loggedOut = results.filter((r) => r.status === 'not_logged_in');
   console.log(`\n🧾 ${carted.length}/${accounts.length} reached cart. Screenshots in grab-shots/.`);
+  if (loggedOut.length > 0) {
+    console.log(`🔴 ${loggedOut.length} account(s) were NOT LOGGED IN: ${loggedOut.map((r) => `acc${r.acc.index}`).join(', ')}`);
+    console.log(`   Fix: node enaadam-login.js ${loggedOut.map((r) => r.acc.index).join(' ')}`);
+  }
 
   // HOLD: keep the carted (headful) windows open until you close them — pay there.
   const open = results.filter((r) => r.context);
   if (open.length > 0 && !HEADLESS) {
-    console.log(`\n💳 PAY NOW in these ${open.length} window(s): ${open.map((r) => `acc${r.acc.index}`).join(', ')}`);
-    console.log('   (This process stays alive until you close every carted window.)');
+    console.log('\n════════════════════════════════════════════════════');
+    console.log(`💳 PAY NOW — ${open.length} window(s) are OPEN with seats in the cart:`);
+    for (const r of open) console.log(`     • acc${r.acc.index} (${r.acc.mobile}) — ${r.status}`);
+    console.log('   Switch to each browser window and complete payment.');
+    console.log('   This console stays alive until you CLOSE every paid window.');
+    console.log('════════════════════════════════════════════════════');
     await Promise.all(open.map((r) => new Promise((res) => r.context.on('close', res))));
-    console.log('All carted windows closed. Exiting.');
+    console.log('✅ All carted windows closed. Exiting.');
+  } else if (carted.length === 0) {
+    console.log('\nNo seats were carted this run. If the event WAS live, check grab-shots/*-no-zone.* for selector mismatches.');
   }
 }
 
