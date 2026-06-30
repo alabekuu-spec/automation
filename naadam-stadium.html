@@ -1,0 +1,1716 @@
+<!doctype html>
+<html lang="mn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>НААДАМ — Тасалбар захиалга</title>
+    <style>
+      :root {
+        --red: rgb(194, 58, 57);
+        --green: rgb(89, 146, 34);
+        --blue: rgb(0, 50, 160);
+        --purple: rgb(111, 53, 177);
+
+        --bg-deep: #050a1f;
+        --bg-dark: #0a1738;
+        --bg-darker: #07112c;
+        --asar-gray: #d9d6cc;
+        --seat-avail: #61b6d9;
+        --seat-sold: #f3f3f3;
+        --seat-stuck: #d3b760;
+        --seat-selected: #1a3aa5;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+        background: var(--bg-deep);
+        color: #fff;
+        min-height: 100vh;
+      }
+
+      /* ---------- Top header ---------- */
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        padding: 10px 28px;
+        background: var(--bg-darker);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .menu-btn {
+        background: transparent;
+        color: #fff;
+        border: 0;
+        font-size: 22px;
+        cursor: pointer;
+        padding: 6px 10px;
+      }
+      .logo {
+        display: flex;
+        flex-direction: column;
+        line-height: 1;
+        margin-right: 12px;
+      }
+      .logo .sub {
+        font-size: 9px;
+        letter-spacing: 2px;
+        color: #c8d2ee;
+      }
+      .logo .title {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: 4px;
+        font-family: "Times New Roman", serif;
+      }
+      .nav {
+        display: flex;
+        gap: 22px;
+        flex: 1;
+      }
+      .nav a {
+        color: #fff;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+        padding: 6px 2px;
+      }
+      .nav a:hover {
+        color: #f6c948;
+      }
+      .ticket-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #fff;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .ticket-link .icon {
+        display: inline-flex;
+        width: 22px;
+        height: 22px;
+        align-items: center;
+        justify-content: center;
+        border: 1.5px solid #fff;
+        border-radius: 4px;
+        font-size: 11px;
+      }
+      .phone-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--bg-dark);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 6px 12px;
+        border-radius: 22px;
+        margin-left: 18px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      /* ---------- Legend ---------- */
+      .legend {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 28px;
+        background: var(--bg-dark);
+      }
+      .prices {
+        display: flex;
+        gap: 10px;
+      }
+      .price-btn {
+        border: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 8px 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18) inset;
+      }
+      .price-btn.red {
+        background: var(--red);
+      }
+      .price-btn.green {
+        background: var(--green);
+      }
+      .price-btn.blue {
+        background: var(--blue);
+      }
+      .price-btn.purple {
+        background: var(--purple);
+      }
+
+      .status {
+        display: flex;
+        gap: 18px;
+        font-size: 13px;
+        color: #e8edff;
+      }
+      .status .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .status .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        border: 1.5px solid rgba(255, 255, 255, 0.5);
+      }
+      .status .dot.avail {
+        background: var(--seat-avail);
+        border-color: var(--seat-avail);
+      }
+      .status .dot.sold {
+        background: #6e7791;
+        border-color: #6e7791;
+      }
+      .status .dot.stuck {
+        background: var(--seat-stuck);
+        border-color: var(--seat-stuck);
+      }
+      .status .dot.blocked {
+        background: transparent;
+        position: relative;
+      }
+      .status .dot.blocked::before,
+      .status .dot.blocked::after {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        border-top: 1.5px solid rgba(255, 255, 255, 0.8);
+        transform-origin: center;
+      }
+      .status .dot.blocked::before {
+        transform: rotate(45deg);
+      }
+      .status .dot.blocked::after {
+        transform: rotate(-45deg);
+      }
+
+      /* ---------- Main area ---------- */
+      .main {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 0;
+        padding: 16px 28px 28px;
+        background: var(--bg-deep);
+      }
+
+      .stadium-wrap {
+        position: relative;
+        background: #ffffff;
+        border-radius: 6px;
+        padding: 16px;
+        min-height: 720px;
+      }
+
+      .zoom {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        display: flex;
+        gap: 6px;
+        z-index: 5;
+      }
+      .zoom button {
+        border: 0;
+        background: #e7e8ec;
+        color: #4a5475;
+        border-radius: 4px;
+        cursor: pointer;
+        padding: 0 14px;
+        height: 32px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .zoom button.icon {
+        width: 32px;
+        padding: 0;
+        font-size: 18px;
+      }
+
+      .back-btn {
+        position: absolute;
+        top: 18px;
+        left: 18px;
+        background: var(--bg-dark);
+        color: #fff;
+        border: 0;
+        border-radius: 4px;
+        padding: 0 16px;
+        height: 36px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        z-index: 6;
+        display: none;
+      }
+      .back-btn:hover {
+        background: var(--bg-darker);
+      }
+
+      .stadium-svg {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      .minimap {
+        position: absolute;
+        right: 18px;
+        bottom: 18px;
+        width: 200px;
+        height: 100px;
+        border-radius: 4px;
+        background: #ffffff;
+        border: 1px solid #d8dbe6;
+        padding: 6px;
+        z-index: 5;
+      }
+      .minimap svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      /* ---------- Seat popup ---------- */
+      .seat-popup {
+        position: fixed;
+        z-index: 100;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+        width: 240px;
+        padding: 12px 14px 14px;
+        color: #1a1a1a;
+        transform: translate(-50%, calc(-100% - 18px));
+        display: none;
+      }
+      .seat-popup::after {
+        content: "";
+        position: absolute;
+        bottom: -7px;
+        left: 50%;
+        width: 14px;
+        height: 14px;
+        background: #fff;
+        transform: translateX(-50%) rotate(45deg);
+        box-shadow: 4px 4px 6px -2px rgba(0, 0, 0, 0.08);
+      }
+      .seat-popup .popup-close {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        background: transparent;
+        border: 0;
+        font-size: 18px;
+        cursor: pointer;
+        color: #777;
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .seat-popup .popup-type {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        text-align: center;
+        font-size: 12px;
+        padding: 6px;
+        background: #f6f6f8;
+        border-radius: 4px;
+        margin: 6px 0 10px;
+        color: #555;
+      }
+      .seat-popup .popup-type .box {
+        width: 12px;
+        height: 12px;
+        border: 1.5px solid #aaa;
+        border-radius: 2px;
+        display: inline-block;
+      }
+      .seat-popup .popup-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        padding: 7px 2px;
+        border-bottom: 1px solid #eee;
+        color: #2a2a2a;
+      }
+      .seat-popup .popup-row strong {
+        color: #0a1738;
+        font-weight: 700;
+      }
+      .seat-popup .popup-row:last-of-type {
+        border-bottom: 0;
+      }
+      .seat-popup .popup-btn {
+        width: 100%;
+        background: rgb(0, 50, 160);
+        color: #fff;
+        border: 0;
+        padding: 11px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 700;
+        margin-top: 10px;
+        cursor: pointer;
+        letter-spacing: 0.3px;
+      }
+      .seat-popup .popup-btn:hover {
+        background: rgb(0, 40, 130);
+      }
+      .seat-popup .popup-btn:disabled {
+        background: #b0b6c4;
+        cursor: not-allowed;
+      }
+
+      /* ---------- Info panel ---------- */
+      .info-panel {
+        background: var(--bg-deep);
+        padding: 60px 16px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 14px;
+      }
+      .info-icon {
+        width: 70px;
+        height: 80px;
+        position: relative;
+      }
+      .info-icon::before,
+      .info-icon::after {
+        content: "";
+        position: absolute;
+        width: 44px;
+        height: 56px;
+        border: 2px solid #fff;
+        border-radius: 4px;
+        background: var(--bg-deep);
+      }
+      .info-icon::before {
+        top: 8px;
+        left: 6px;
+        transform: rotate(-8deg);
+      }
+      .info-icon::after {
+        top: 14px;
+        left: 18px;
+        transform: rotate(6deg);
+      }
+      .info-panel h3 {
+        margin: 4px 0 0;
+        font-size: 17px;
+        font-weight: 700;
+      }
+      .info-panel .note {
+        width: 100%;
+        background: #f3e6c6;
+        color: #4a3a14;
+        border-radius: 6px;
+        padding: 14px;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .info-panel .cart {
+        width: 100%;
+        background: #1a2950;
+        border-radius: 6px;
+        padding: 10px 12px;
+        color: #fff;
+        font-size: 13px;
+        text-align: left;
+      }
+      .info-panel .cart .cart-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .info-panel .cart .cart-row:last-child {
+        border-bottom: 0;
+      }
+      .info-panel .cart .cart-info {
+        flex: 1;
+      }
+      .info-panel .cart .cart-info .small {
+        font-size: 11px;
+        color: #c2c9e0;
+      }
+      .info-panel .cart .cart-price {
+        font-weight: 700;
+        font-size: 13px;
+      }
+      .info-panel .cart .remove-btn {
+        background: transparent;
+        border: 0;
+        color: #ff8a8a;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 0 4px;
+      }
+      .info-panel .cart .total-row {
+        font-weight: 700;
+        padding-top: 8px;
+      }
+      .info-panel .checkout-btn {
+        width: 100%;
+        background: rgb(89, 146, 34);
+        color: #fff;
+        border: 0;
+        padding: 12px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 700;
+        margin-top: 8px;
+        cursor: pointer;
+      }
+      .info-panel .checkout-btn:hover {
+        background: rgb(70, 120, 24);
+      }
+
+      /* clickable sector hover */
+      [data-sector] {
+        cursor: pointer;
+        transition: filter 0.15s;
+      }
+      [data-sector]:hover {
+        filter: brightness(1.15);
+      }
+
+      .seat {
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="menu-btn" aria-label="menu">☰</button>
+      <div class="logo">
+        <span class="sub">ҮНДЭСНИЙ ИХ БАЯР</span>
+        <span class="title">НААДАМ</span>
+      </div>
+      <nav class="nav">
+        <a href="#">НААДМЫН ТУХАЙ</a>
+        <a href="#">МЭДЭЭ, МЭДЭЭЛЭЛ</a>
+        <a href="#">ХӨТӨЛБӨР</a>
+        <a href="#">ОРОН НУТАГ</a>
+        <a href="#">МЭДЭЭЛЛИЙН ТӨВ</a>
+        <a href="#">АРХИВ</a>
+        <a href="#">ENGLISH</a>
+      </nav>
+      <a class="ticket-link" href="#">
+        <span class="icon">🎫</span>
+        <span>ТАСАЛБАР/ЗОГСООЛ</span>
+      </a>
+      <span class="phone-pill">88867750 ▾</span>
+    </header>
+
+    <section class="legend">
+      <div class="prices">
+        <button class="price-btn red">157,500 ₮</button>
+        <button class="price-btn green">136,500 ₮</button>
+        <button class="price-btn blue">105,000 ₮</button>
+        <button class="price-btn purple">52,500 ₮</button>
+      </div>
+      <div class="status">
+        <span class="chip"><i class="dot avail"></i> Боломжтой</span>
+        <span class="chip"><i class="dot sold"></i> Зарагдсан</span>
+        <span class="chip"><i class="dot stuck"></i> Түгжигдсэн</span>
+        <span class="chip"><i class="dot blocked"></i> Багана</span>
+      </div>
+    </section>
+
+    <main class="main">
+      <div class="stadium-wrap">
+        <button id="back-btn" class="back-btn">← Буцах</button>
+
+        <div class="zoom">
+          <button class="icon" title="Багасгах">−</button>
+          <button class="icon" title="Томсгох">+</button>
+          <button title="Бүтэн харах">Бүтэн харах</button>
+        </div>
+
+        <svg
+          id="stadium"
+          viewBox="0 0 1600 800"
+          class="stadium-svg"
+          preserveAspectRatio="xMidYMid meet"
+        ></svg>
+
+        <div class="minimap">
+          <svg
+            id="minimap-svg"
+            viewBox="0 0 1600 800"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
+        </div>
+      </div>
+
+      <aside class="info-panel">
+        <div class="info-icon"></div>
+        <h3 id="panel-title">Суудал сонгоогүй байна</h3>
+        <div class="note">
+          Та хамгийн ихдээ <strong>2</strong> тасалбар худалдан авах боломжтой.
+        </div>
+        <div id="cart-area"></div>
+      </aside>
+    </main>
+
+    <div class="seat-popup" id="seat-popup">
+      <button class="popup-close" id="popup-close">×</button>
+      <div class="popup-type"><span class="box"></span> Энгийн</div>
+      <div class="popup-row">
+        <span>Сектор</span><strong id="pop-sector">—</strong>
+      </div>
+      <div class="popup-row">
+        <span>Эгнээ</span><strong id="pop-row">—</strong>
+      </div>
+      <div class="popup-row">
+        <span>Суудал</span><strong id="pop-seat">—</strong>
+      </div>
+      <div class="popup-row">
+        <span>Үнэ</span><strong id="pop-price">—</strong>
+      </div>
+      <button class="popup-btn" id="popup-cart">Сагслах</button>
+    </div>
+
+    <script>
+      (() => {
+        const SVG_NS = "http://www.w3.org/2000/svg";
+        const svg = document.getElementById("stadium");
+        const miniSvg = document.getElementById("minimap-svg");
+        const backBtn = document.getElementById("back-btn");
+        const panelTitle = document.getElementById("panel-title");
+        const cartArea = document.getElementById("cart-area");
+
+        const popup = document.getElementById("seat-popup");
+        const popupClose = document.getElementById("popup-close");
+        const popupCart = document.getElementById("popup-cart");
+        const popSector = document.getElementById("pop-sector");
+        const popRow = document.getElementById("pop-row");
+        const popSeat = document.getElementById("pop-seat");
+        const popPrice = document.getElementById("pop-price");
+
+        /* ---------- color tokens ---------- */
+        const RED = "rgb(194, 58, 57)";
+        const GREEN = "rgb(89, 146, 34)";
+        const BLUE = "rgb(0, 50, 160)";
+        const PURPLE = "rgb(111, 53, 177)";
+        const ASAR = "#d9d6cc";
+        const FIELD = "rgb(56, 110, 30)";
+        const FIELD_LIGHT = "#e6efde";
+        const STROKE = "#ffffff";
+        const SEP = 3;
+
+        /* ---------- overview geometry ---------- */
+        const OX = 50,
+          OY = 50;
+        const W = 1500,
+          H = 700;
+        const R_OUT = 250,
+          T = 100,
+          R_IN = R_OUT - T;
+        const oL = OX,
+          oR = OX + W,
+          oT = OY,
+          oB = OY + H;
+        const iL = oL + T,
+          iR = oR - T,
+          iT = oT + T,
+          iB = oB - T;
+        const tlCx = oL + R_OUT,
+          tlCy = oT + R_OUT;
+        const trCx = oR - R_OUT,
+          trCy = oT + R_OUT;
+        const brCx = oR - R_OUT,
+          brCy = oB - R_OUT;
+        const blCx = oL + R_OUT,
+          blCy = oB - R_OUT;
+
+        /* ---------- sector configuration ---------- */
+        const SECTORS = {
+          17: {
+            kind: "rect",
+            side: "top",
+            x: tlCx,
+            y: oT,
+            w: 150,
+            h: T,
+            color: RED,
+            price: 157500,
+          },
+          18: {
+            kind: "rect",
+            side: "top",
+            x: tlCx + 150,
+            y: oT,
+            w: 150,
+            h: T,
+            color: RED,
+            price: 157500,
+          },
+          ASAR_TOP: {
+            kind: "rect",
+            side: "top",
+            x: tlCx + 300,
+            y: oT,
+            w: 400,
+            h: T,
+            color: ASAR,
+            label: "ТӨВ АСАР",
+            textColor: "#0a1738",
+            noSeats: true,
+          },
+          1: {
+            kind: "rect",
+            side: "top",
+            x: tlCx + 700,
+            y: oT,
+            w: 150,
+            h: T,
+            color: RED,
+            price: 157500,
+          },
+          2: {
+            kind: "rect",
+            side: "top",
+            x: tlCx + 850,
+            y: oT,
+            w: 150,
+            h: T,
+            color: RED,
+            price: 157500,
+          },
+          3: {
+            kind: "arc",
+            side: "tr",
+            cx: trCx,
+            cy: trCy,
+            rIn: R_IN,
+            rOut: R_OUT,
+            a1: 0,
+            a2: 90,
+            sweep: 1,
+            color: RED,
+            price: 157500,
+          },
+          16: {
+            kind: "arc",
+            side: "tl",
+            cx: tlCx,
+            cy: tlCy,
+            rIn: R_IN,
+            rOut: R_OUT,
+            a1: 270,
+            a2: 360,
+            sweep: 1,
+            color: RED,
+            price: 157500,
+          },
+          8: {
+            kind: "arc",
+            side: "br",
+            cx: brCx,
+            cy: brCy,
+            rIn: R_IN,
+            rOut: R_OUT,
+            a1: 90,
+            a2: 180,
+            sweep: 1,
+            color: BLUE,
+            price: 105000,
+          },
+          11: {
+            kind: "arc",
+            side: "bl",
+            cx: blCx,
+            cy: blCy,
+            rIn: R_IN,
+            rOut: R_OUT,
+            a1: 180,
+            a2: 270,
+            sweep: 1,
+            color: BLUE,
+            price: 105000,
+          },
+          4: {
+            kind: "rect",
+            side: "right",
+            x: oR - T,
+            y: trCy,
+            w: T,
+            h: 50,
+            color: RED,
+            price: 157500,
+          },
+          5: {
+            kind: "rect",
+            side: "right",
+            x: oR - T,
+            y: trCy + 50,
+            w: T,
+            h: 50,
+            color: RED,
+            price: 157500,
+          },
+          6: {
+            kind: "rect",
+            side: "right",
+            x: oR - T,
+            y: trCy + 100,
+            w: T,
+            h: 50,
+            color: BLUE,
+            price: 105000,
+          },
+          7: {
+            kind: "rect",
+            side: "right",
+            x: oR - T,
+            y: trCy + 150,
+            w: T,
+            h: 50,
+            color: BLUE,
+            price: 105000,
+          },
+          10: {
+            kind: "rect",
+            side: "bottom",
+            x: blCx,
+            y: oB - T,
+            w: 350,
+            h: T,
+            color: GREEN,
+            price: 136500,
+          },
+          ASAR_BOT: {
+            kind: "rect",
+            side: "bottom",
+            x: blCx + 350,
+            y: oB - T,
+            w: 300,
+            h: T,
+            color: ASAR,
+            label: "БӨХЧҮҮДИЙН АСАР",
+            textColor: "#0a1738",
+            noSeats: true,
+          },
+          9: {
+            kind: "rect",
+            side: "bottom",
+            x: blCx + 650,
+            y: oB - T,
+            w: 350,
+            h: T,
+            color: GREEN,
+            price: 136500,
+          },
+          15: {
+            kind: "rect",
+            side: "left",
+            x: oL,
+            y: tlCy,
+            w: T,
+            h: 50,
+            color: RED,
+            price: 157500,
+          },
+          14: {
+            kind: "rect",
+            side: "left",
+            x: oL,
+            y: tlCy + 50,
+            w: T,
+            h: 50,
+            color: RED,
+            price: 157500,
+          },
+          13: {
+            kind: "rect",
+            side: "left",
+            x: oL,
+            y: tlCy + 100,
+            w: T,
+            h: 50,
+            color: BLUE,
+            price: 105000,
+          },
+          12: {
+            kind: "rect",
+            side: "left",
+            x: oL,
+            y: tlCy + 150,
+            w: T,
+            h: 50,
+            color: BLUE,
+            price: 105000,
+          },
+          "16G": {
+            kind: "sub",
+            x: tlCx + 30,
+            y: iT + 4,
+            w: 95,
+            h: 28,
+            color: PURPLE,
+            price: 52500,
+          },
+          "16D": {
+            kind: "sub",
+            x: tlCx + 30 + 103,
+            y: iT + 4,
+            w: 95,
+            h: 28,
+            color: PURPLE,
+            price: 52500,
+          },
+          "16E": {
+            kind: "sub",
+            x: tlCx + 30 + 206,
+            y: iT + 4,
+            w: 95,
+            h: 28,
+            color: PURPLE,
+            price: 52500,
+          },
+          "3A": {
+            kind: "sub",
+            x: trCx - 30 - 198,
+            y: iT + 4,
+            w: 95,
+            h: 28,
+            color: PURPLE,
+            price: 52500,
+          },
+          "3B": {
+            kind: "sub",
+            x: trCx - 30 - 95,
+            y: iT + 4,
+            w: 95,
+            h: 28,
+            color: PURPLE,
+            price: 52500,
+          },
+          "16B": {
+            kind: "sub",
+            x: iL + 4,
+            y: tlCy + 30,
+            w: 28,
+            h: 80,
+            color: PURPLE,
+            price: 52500,
+          },
+          "16A": {
+            kind: "sub",
+            x: iL + 4,
+            y: tlCy + 30 + 88,
+            w: 28,
+            h: 80,
+            color: PURPLE,
+            price: 52500,
+          },
+        };
+
+        /* ---------- state ---------- */
+        let view = { type: "overview" };
+        const MAX_CART = 2;
+        const cart = []; // items: { sectorId, row, seat, price }
+        const cartIndex = new Set(); // keys "<sectorId>:<row>:<seat>"
+        let pending = null; // currently shown in popup
+
+        /* ---------- helpers ---------- */
+        function el(name, attrs = {}, parent = null) {
+          const e = document.createElementNS(SVG_NS, name);
+          for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+          if (parent) parent.appendChild(e);
+          return e;
+        }
+        function clear(node) {
+          while (node.firstChild) node.removeChild(node.firstChild);
+        }
+        function pt(cx, cy, r, alpha) {
+          const a = (alpha * Math.PI) / 180;
+          return { x: cx + r * Math.sin(a), y: cy - r * Math.cos(a) };
+        }
+
+        /* ============== OVERVIEW ============== */
+        function drawFieldRect(parent) {
+          const d = `M ${iL + R_IN} ${iT}
+               L ${iR - R_IN} ${iT}
+               A ${R_IN} ${R_IN} 0 0 1 ${iR} ${iT + R_IN}
+               L ${iR} ${iB - R_IN}
+               A ${R_IN} ${R_IN} 0 0 1 ${iR - R_IN} ${iB}
+               L ${iL + R_IN} ${iB}
+               A ${R_IN} ${R_IN} 0 0 1 ${iL} ${iB - R_IN}
+               L ${iL} ${iT + R_IN}
+               A ${R_IN} ${R_IN} 0 0 1 ${iL + R_IN} ${iT} Z`;
+          el("path", { d, fill: FIELD }, parent);
+        }
+        function drawEmblem(parent) {
+          const g = el(
+            "g",
+            {
+              transform: `translate(${(oL + oR) / 2} ${(oT + oB) / 2})`,
+              opacity: 0.55,
+            },
+            parent,
+          );
+          g.innerHTML = `
+      <path d="M -3 -75 L 0 -85 L 3 -75 Z" fill="#c4dba0"/>
+      <path d="M -10 -65 L -10 -45 M 0 -75 L 0 -45 M 10 -65 L 10 -45" stroke="#c4dba0" stroke-width="3"/>
+      <rect x="-22" y="-50" width="44" height="6" fill="#c4dba0"/>
+      <path d="M -60 -28 C -60 -55 -25 -55 0 -55 C 25 -55 60 -55 60 -28 C 60 10 30 38 0 38 C -30 38 -60 10 -60 -28 Z" fill="#c4dba0"/>
+      <path d="M -32 6 L -32 36 M -16 6 L -16 36 M 0 6 L 0 36 M 16 6 L 16 36 M 32 6 L 32 36" stroke="#86a85a" stroke-width="2"/>
+    `;
+        }
+        function drawSectorShape(parent, id, sect, interactive = true) {
+          const isInteractive = interactive && !sect.noSeats;
+          let shape;
+          if (sect.kind === "rect" || sect.kind === "sub") {
+            shape = el(
+              "rect",
+              {
+                x: sect.x,
+                y: sect.y,
+                width: sect.w,
+                height: sect.h,
+                fill: sect.color,
+                stroke: STROKE,
+                "stroke-width": SEP,
+                rx: 4,
+              },
+              parent,
+            );
+          } else if (sect.kind === "arc") {
+            const p1in = pt(sect.cx, sect.cy, sect.rIn, sect.a1);
+            const p1out = pt(sect.cx, sect.cy, sect.rOut, sect.a1);
+            const p2out = pt(sect.cx, sect.cy, sect.rOut, sect.a2);
+            const p2in = pt(sect.cx, sect.cy, sect.rIn, sect.a2);
+            const sw = sect.sweep,
+              isw = 1 - sw;
+            const d = `M ${p1in.x} ${p1in.y} L ${p1out.x} ${p1out.y} A ${sect.rOut} ${sect.rOut} 0 0 ${sw} ${p2out.x} ${p2out.y} L ${p2in.x} ${p2in.y} A ${sect.rIn} ${sect.rIn} 0 0 ${isw} ${p1in.x} ${p1in.y} Z`;
+            shape = el(
+              "path",
+              { d, fill: sect.color, stroke: STROKE, "stroke-width": SEP },
+              parent,
+            );
+          }
+          if (isInteractive) {
+            shape.setAttribute("data-sector", id);
+            shape.addEventListener("click", () =>
+              setView({ type: "sector", sectorId: id }),
+            );
+          }
+          // label
+          const labelText = sect.label || id;
+          let lx, ly, fontSize;
+          if (sect.kind === "rect" || sect.kind === "sub") {
+            lx = sect.x + sect.w / 2;
+            ly = sect.y + sect.h / 2 + 2;
+            fontSize =
+              sect.kind === "sub"
+                ? 14
+                : labelText.length > 8
+                  ? 18
+                  : labelText.length > 3
+                    ? 22
+                    : 32;
+          } else {
+            const midA = (sect.a1 + sect.a2) / 2;
+            const midR = (sect.rIn + sect.rOut) / 2;
+            const lp = pt(sect.cx, sect.cy, midR, midA);
+            lx = lp.x;
+            ly = lp.y + 2;
+            fontSize = 32;
+          }
+          el(
+            "text",
+            {
+              x: lx,
+              y: ly,
+              "text-anchor": "middle",
+              "dominant-baseline": "middle",
+              fill: sect.textColor || "#fff",
+              "font-weight": "700",
+              "font-size": fontSize,
+              "pointer-events": "none",
+            },
+            parent,
+          ).textContent = labelText;
+        }
+        function renderOverview(target) {
+          clear(target);
+          drawFieldRect(target);
+          drawEmblem(target);
+          for (const [id, sect] of Object.entries(SECTORS)) {
+            drawSectorShape(target, id, sect, target === svg);
+          }
+        }
+
+        /* ============== SECTOR DETAIL ============== */
+
+        function pickState(seed) {
+          const r = ((seed * 9301 + 49297) % 233280) / 233280;
+          if (r < 0.04) return "sold";
+          if (r < 0.06) return "stuck";
+          if (r < 0.065) return "blocked";
+          return "available";
+        }
+
+        function makeSeat(
+          parent,
+          sectorId,
+          row,
+          seatNum,
+          x,
+          y,
+          state,
+          sect,
+          radius,
+        ) {
+          const key = `${sectorId}:${row}:${seatNum}`;
+          const inCart = cartIndex.has(key);
+          if (state === "blocked") {
+            const s = radius * 0.6;
+            const g = el("g", { class: "seat-x" }, parent);
+            el(
+              "line",
+              {
+                x1: x - s,
+                y1: y - s,
+                x2: x + s,
+                y2: y + s,
+                stroke: "#a8a8a8",
+                "stroke-width": 1.5,
+              },
+              g,
+            );
+            el(
+              "line",
+              {
+                x1: x - s,
+                y1: y + s,
+                x2: x + s,
+                y2: y - s,
+                stroke: "#a8a8a8",
+                "stroke-width": 1.5,
+              },
+              g,
+            );
+            return;
+          }
+          let fill;
+          if (inCart) fill = "var(--seat-selected)";
+          else if (state === "sold") fill = "#dadce5";
+          else if (state === "stuck") fill = "#d3b760";
+          else fill = "#61b6d9";
+
+          const c = el(
+            "circle",
+            {
+              cx: x,
+              cy: y,
+              r: radius,
+              fill,
+              class: "seat",
+            },
+            parent,
+          );
+          if (state === "available" || inCart) {
+            c.style.cursor = "pointer";
+            c.addEventListener("click", (ev) => {
+              ev.stopPropagation();
+              showPopupForSeat(ev, sectorId, row, seatNum, sect.price);
+            });
+          }
+        }
+
+        function sectorLabel(id) {
+          return `${id}-Р СЕКТОР`;
+        }
+
+        function drawStraightSectorDetail(target, id) {
+          const sect = SECTORS[id];
+          const isBottom = sect.side === "bottom";
+          const isTop = sect.side === "top";
+          const isLeft = sect.side === "left";
+          const isRight = sect.side === "right";
+
+          // Bigger seats
+          const NUM_ROWS = 14;
+          const SEATS_PER_BLOCK = 12;
+          const NUM_BLOCKS = 3;
+          const AISLE = 36;
+          const SEAT_DX = 40;
+          const SEAT_DY = 40;
+          const SEAT_R = 13;
+          const blockW = SEATS_PER_BLOCK * SEAT_DX;
+          const totalSeatW = NUM_BLOCKS * blockW + (NUM_BLOCKS - 1) * AISLE;
+          const seatsHeight = NUM_ROWS * SEAT_DY;
+
+          // Field background area
+          if (isBottom) {
+            el(
+              "rect",
+              { x: 0, y: 0, width: 1600, height: 320, fill: FIELD_LIGHT },
+              target,
+            );
+            el(
+              "path",
+              {
+                d: `M 0 320 Q 800 360 1600 320 L 1600 0 L 0 0 Z`,
+                fill: FIELD_LIGHT,
+              },
+              target,
+            );
+          } else if (isTop) {
+            el(
+              "rect",
+              { x: 0, y: 480, width: 1600, height: 320, fill: FIELD_LIGHT },
+              target,
+            );
+            el(
+              "path",
+              {
+                d: `M 0 480 Q 800 440 1600 480 L 1600 800 L 0 800 Z`,
+                fill: FIELD_LIGHT,
+              },
+              target,
+            );
+          } else if (isLeft) {
+            el(
+              "rect",
+              { x: 480, y: 0, width: 1120, height: 800, fill: FIELD_LIGHT },
+              target,
+            );
+            el(
+              "path",
+              {
+                d: `M 480 0 Q 440 400 480 800 L 1600 800 L 1600 0 Z`,
+                fill: FIELD_LIGHT,
+              },
+              target,
+            );
+          } else {
+            el(
+              "rect",
+              { x: 0, y: 0, width: 1120, height: 800, fill: FIELD_LIGHT },
+              target,
+            );
+            el(
+              "path",
+              {
+                d: `M 1120 0 Q 1160 400 1120 800 L 0 800 L 0 0 Z`,
+                fill: FIELD_LIGHT,
+              },
+              target,
+            );
+          }
+
+          // Sector label as faded background
+          const labelX = isBottom || isTop ? 800 : isLeft ? 1100 : 500;
+          const labelY = isBottom ? 600 : isTop ? 200 : 400;
+          el(
+            "text",
+            {
+              x: labelX,
+              y: labelY,
+              "text-anchor": "middle",
+              "dominant-baseline": "middle",
+              fill: "#c8c8c8",
+              "font-weight": "800",
+              "font-size": 80,
+              opacity: 0.32,
+              "pointer-events": "none",
+            },
+            target,
+          ).textContent = sectorLabel(id);
+
+          // Adjacent context for bottom (БӨХЧҮҮДИЙН АСАР label)
+          if (isBottom) {
+            const ax = id === "9" ? 200 : 1400;
+            el(
+              "rect",
+              {
+                x: ax - 180,
+                y: 480,
+                width: 360,
+                height: 240,
+                fill: "#e6e6e6",
+                rx: 4,
+              },
+              target,
+            );
+            el(
+              "text",
+              {
+                x: ax,
+                y: 595,
+                "text-anchor": "middle",
+                fill: "#4a4a4a",
+                "font-weight": "800",
+                "font-size": 34,
+              },
+              target,
+            ).textContent = "БӨХЧҮҮДИЙН";
+            el(
+              "text",
+              {
+                x: ax,
+                y: 640,
+                "text-anchor": "middle",
+                fill: "#4a4a4a",
+                "font-weight": "800",
+                "font-size": 34,
+              },
+              target,
+            ).textContent = "АСАР";
+          }
+
+          // Place seat grid
+          let originX, originY;
+          if (isBottom) {
+            originX = (1600 - totalSeatW) / 2;
+            originY = 360;
+          } else if (isTop) {
+            originX = (1600 - totalSeatW) / 2;
+            originY = 440 - seatsHeight;
+          } else if (isLeft) {
+            originX = 440 - seatsHeight;
+            originY = (800 - totalSeatW) / 2;
+          } else {
+            originX = 1160;
+            originY = (800 - totalSeatW) / 2;
+          }
+
+          for (let row = 1; row <= NUM_ROWS; row++) {
+            // row labels left + right (or top/bottom for vertical)
+            if (isBottom || isTop) {
+              const ly = originY + (row - 1) * SEAT_DY + SEAT_DY / 2;
+              el(
+                "text",
+                {
+                  x: originX - 18,
+                  y: ly + 4,
+                  "text-anchor": "end",
+                  fill: "#7a849a",
+                  "font-size": 13,
+                  "font-weight": "600",
+                },
+                target,
+              ).textContent = row;
+              el(
+                "text",
+                {
+                  x: originX + totalSeatW + 18,
+                  y: ly + 4,
+                  "text-anchor": "start",
+                  fill: "#7a849a",
+                  "font-size": 13,
+                  "font-weight": "600",
+                },
+                target,
+              ).textContent = row;
+            } else {
+              const lx = isLeft
+                ? originX + (row - 1) * SEAT_DY + SEAT_DY / 2
+                : originX + (NUM_ROWS - row) * SEAT_DY + SEAT_DY / 2;
+              el(
+                "text",
+                {
+                  x: lx,
+                  y: originY - 12,
+                  "text-anchor": "middle",
+                  fill: "#7a849a",
+                  "font-size": 13,
+                  "font-weight": "600",
+                },
+                target,
+              ).textContent = row;
+              el(
+                "text",
+                {
+                  x: lx,
+                  y: originY + totalSeatW + 22,
+                  "text-anchor": "middle",
+                  fill: "#7a849a",
+                  "font-size": 13,
+                  "font-weight": "600",
+                },
+                target,
+              ).textContent = row;
+            }
+
+            let seatNum = 1;
+            for (let block = 0; block < NUM_BLOCKS; block++) {
+              for (let i = 0; i < SEATS_PER_BLOCK; i++) {
+                let x, y;
+                if (isBottom || isTop) {
+                  x =
+                    originX +
+                    block * (blockW + AISLE) +
+                    i * SEAT_DX +
+                    SEAT_DX / 2;
+                  y = originY + (row - 1) * SEAT_DY + SEAT_DY / 2;
+                } else if (isLeft) {
+                  x = originX + (row - 1) * SEAT_DY + SEAT_DY / 2;
+                  y =
+                    originY +
+                    block * (blockW + AISLE) +
+                    i * SEAT_DX +
+                    SEAT_DX / 2;
+                } else {
+                  x = originX + (NUM_ROWS - row) * SEAT_DY + SEAT_DY / 2;
+                  y =
+                    originY +
+                    block * (blockW + AISLE) +
+                    i * SEAT_DX +
+                    SEAT_DX / 2;
+                }
+                const idNum = parseInt(id.replace(/\D/g, "") || "1");
+                const seed = idNum * 99991 + row * 137 + seatNum * 7;
+                const state = pickState(seed);
+                makeSeat(target, id, row, seatNum, x, y, state, sect, SEAT_R);
+                seatNum++;
+              }
+            }
+          }
+        }
+
+        function drawCornerSectorDetail(target, id) {
+          const sect = SECTORS[id];
+          el(
+            "rect",
+            { x: 0, y: 0, width: 1600, height: 800, fill: FIELD_LIGHT },
+            target,
+          );
+          el(
+            "text",
+            {
+              x: 800,
+              y: 400,
+              "text-anchor": "middle",
+              "dominant-baseline": "middle",
+              fill: "#c8c8c8",
+              "font-weight": "800",
+              "font-size": 80,
+              opacity: 0.32,
+              "pointer-events": "none",
+            },
+            target,
+          ).textContent = sectorLabel(id);
+
+          const NUM_ROWS = 16;
+          const SEAT_DR = 36;
+          const startRadius = 160;
+          const cx = 800,
+            cy = 400;
+          const arcSpan = sect.a2 - sect.a1;
+          const seatR = 11;
+
+          for (let row = 1; row <= NUM_ROWS; row++) {
+            const r = startRadius + (row - 1) * SEAT_DR;
+            const circumference = ((arcSpan * Math.PI) / 180) * r;
+            const numSeats = Math.max(20, Math.floor(circumference / 36));
+            const aisleA = Math.floor(numSeats / 3);
+            const aisleB = Math.floor((2 * numSeats) / 3);
+            // row label
+            const labelP = pt(cx, cy, r, sect.a1 - 3);
+            el(
+              "text",
+              {
+                x: labelP.x,
+                y: labelP.y + 4,
+                "text-anchor": "middle",
+                fill: "#7a849a",
+                "font-size": 13,
+                "font-weight": "600",
+              },
+              target,
+            ).textContent = row;
+            for (let i = 0; i < numSeats; i++) {
+              if (i === aisleA || i === aisleB) continue;
+              const angle = sect.a1 + (i + 0.5) * (arcSpan / numSeats);
+              const p = pt(cx, cy, r, angle);
+              const idNum = parseInt(id.replace(/\D/g, "") || "1");
+              const seed = idNum * 99991 + row * 137 + (i + 1) * 7;
+              const state = pickState(seed);
+              makeSeat(target, id, row, i + 1, p.x, p.y, state, sect, seatR);
+            }
+          }
+        }
+
+        function drawSubSectorDetail(target, id) {
+          const sect = SECTORS[id];
+          el(
+            "rect",
+            { x: 0, y: 0, width: 1600, height: 800, fill: FIELD_LIGHT },
+            target,
+          );
+          el(
+            "text",
+            {
+              x: 800,
+              y: 350,
+              "text-anchor": "middle",
+              "dominant-baseline": "middle",
+              fill: "#c8c8c8",
+              "font-weight": "800",
+              "font-size": 80,
+              opacity: 0.32,
+              "pointer-events": "none",
+            },
+            target,
+          ).textContent = sectorLabel(id);
+
+          const NUM_ROWS = 6;
+          const SEATS_PER_BLOCK = 10;
+          const NUM_BLOCKS = 2;
+          const AISLE = 50;
+          const SEAT_DX = 50;
+          const SEAT_DY = 50;
+          const seatR = 16;
+          const blockW = SEATS_PER_BLOCK * SEAT_DX;
+          const totalW = NUM_BLOCKS * blockW + AISLE;
+          const originX = (1600 - totalW) / 2;
+          const originY = 480;
+          for (let row = 1; row <= NUM_ROWS; row++) {
+            const yMid = originY + (row - 1) * SEAT_DY + SEAT_DY / 2;
+            el(
+              "text",
+              {
+                x: originX - 22,
+                y: yMid + 4,
+                "text-anchor": "end",
+                fill: "#7a849a",
+                "font-size": 14,
+                "font-weight": "600",
+              },
+              target,
+            ).textContent = row;
+            let seatNum = 1;
+            for (let b = 0; b < NUM_BLOCKS; b++) {
+              for (let i = 0; i < SEATS_PER_BLOCK; i++) {
+                const x =
+                  originX + b * (blockW + AISLE) + i * SEAT_DX + SEAT_DX / 2;
+                const seed = id.charCodeAt(0) * 99991 + row * 137 + seatNum * 7;
+                const state = pickState(seed);
+                makeSeat(target, id, row, seatNum, x, yMid, state, sect, seatR);
+                seatNum++;
+              }
+            }
+          }
+        }
+
+        function renderSectorDetail(target, id) {
+          clear(target);
+          const sect = SECTORS[id];
+          if (!sect || sect.noSeats) {
+            view = { type: "overview" };
+            render();
+            return;
+          }
+          if (sect.kind === "arc") drawCornerSectorDetail(target, id);
+          else if (sect.kind === "sub") drawSubSectorDetail(target, id);
+          else drawStraightSectorDetail(target, id);
+        }
+
+        /* ============== POPUP ============== */
+        function showPopupForSeat(evt, sectorId, row, seatNum, price) {
+          pending = { sectorId, row, seat: seatNum, price };
+          popSector.textContent = sectorId;
+          popRow.textContent = row;
+          popSeat.textContent = seatNum;
+          popPrice.textContent = `${price.toLocaleString()} ₮`;
+          popup.style.display = "block";
+          const target = evt.target;
+          const rect = target.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top;
+          popup.style.left = cx + "px";
+          popup.style.top = cy + "px";
+          // toggle button label if already in cart
+          const key = `${sectorId}:${row}:${seatNum}`;
+          if (cartIndex.has(key)) {
+            popupCart.textContent = "Сагснаас хасах";
+          } else {
+            popupCart.textContent = "Сагслах";
+            popupCart.disabled = cartIndex.size >= MAX_CART;
+          }
+        }
+        function hidePopup() {
+          popup.style.display = "none";
+          pending = null;
+        }
+        popupClose.addEventListener("click", hidePopup);
+        document.addEventListener("click", (ev) => {
+          if (
+            !popup.contains(ev.target) &&
+            !ev.target.classList.contains("seat") &&
+            popup.style.display === "block"
+          ) {
+            hidePopup();
+          }
+        });
+        popupCart.addEventListener("click", () => {
+          if (!pending) return;
+          const key = `${pending.sectorId}:${pending.row}:${pending.seat}`;
+          if (cartIndex.has(key)) {
+            // remove
+            const idx = cart.findIndex(
+              (i) =>
+                i.sectorId === pending.sectorId &&
+                i.row === pending.row &&
+                i.seat === pending.seat,
+            );
+            if (idx >= 0) cart.splice(idx, 1);
+            cartIndex.delete(key);
+          } else {
+            if (cartIndex.size >= MAX_CART) return;
+            cart.push({ ...pending });
+            cartIndex.add(key);
+          }
+          hidePopup();
+          updateCartUI();
+          if (view.type === "sector") renderSectorDetail(svg, view.sectorId);
+        });
+
+        /* ============== CART UI ============== */
+        function updateCartUI() {
+          if (cart.length === 0) {
+            panelTitle.textContent = "Суудал сонгоогүй байна";
+            cartArea.innerHTML = "";
+            return;
+          }
+          panelTitle.textContent = `Сагсанд ${cart.length} тасалбар`;
+          const total = cart.reduce((s, x) => s + x.price, 0);
+          const rows = cart
+            .map(
+              (item, i) => `
+      <div class="cart-row">
+        <div class="cart-info">
+          <div><strong>${item.sectorId}-р сектор</strong></div>
+          <div class="small">Эгнээ ${item.row} · Суудал ${item.seat}</div>
+        </div>
+        <div class="cart-price">${item.price.toLocaleString()} ₮</div>
+        <button class="remove-btn" data-idx="${i}" title="Хасах">✕</button>
+      </div>
+    `,
+            )
+            .join("");
+          cartArea.className = "cart";
+          cartArea.innerHTML =
+            rows +
+            `
+      <div class="cart-row total-row">
+        <span>Нийт</span>
+        <strong>${total.toLocaleString()} ₮</strong>
+      </div>
+    ` +
+            `<button class="checkout-btn">Тасалбар авах</button>`;
+          cartArea.querySelectorAll(".remove-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const idx = parseInt(btn.dataset.idx);
+              const item = cart[idx];
+              cartIndex.delete(`${item.sectorId}:${item.row}:${item.seat}`);
+              cart.splice(idx, 1);
+              updateCartUI();
+              if (view.type === "sector")
+                renderSectorDetail(svg, view.sectorId);
+            });
+          });
+          cartArea
+            .querySelector(".checkout-btn")
+            .addEventListener("click", () => {
+              alert(
+                `Тасалбар авах: ${cart.length} ширхэг, нийт ${total.toLocaleString()} ₮`,
+              );
+            });
+        }
+
+        /* ============== MINIMAP ============== */
+        function renderMinimap() {
+          clear(miniSvg);
+          renderOverview(miniSvg);
+          if (view.type === "sector") {
+            const sect = SECTORS[view.sectorId];
+            if (!sect) return;
+            if (sect.kind === "rect" || sect.kind === "sub") {
+              el(
+                "rect",
+                {
+                  x: sect.x,
+                  y: sect.y,
+                  width: sect.w,
+                  height: sect.h,
+                  fill: "none",
+                  stroke: "#f6c948",
+                  "stroke-width": 6,
+                },
+                miniSvg,
+              );
+            } else if (sect.kind === "arc") {
+              const p1in = pt(sect.cx, sect.cy, sect.rIn, sect.a1);
+              const p1out = pt(sect.cx, sect.cy, sect.rOut, sect.a1);
+              const p2out = pt(sect.cx, sect.cy, sect.rOut, sect.a2);
+              const p2in = pt(sect.cx, sect.cy, sect.rIn, sect.a2);
+              const sw = sect.sweep,
+                isw = 1 - sw;
+              const d = `M ${p1in.x} ${p1in.y} L ${p1out.x} ${p1out.y} A ${sect.rOut} ${sect.rOut} 0 0 ${sw} ${p2out.x} ${p2out.y} L ${p2in.x} ${p2in.y} A ${sect.rIn} ${sect.rIn} 0 0 ${isw} ${p1in.x} ${p1in.y} Z`;
+              el(
+                "path",
+                { d, fill: "none", stroke: "#f6c948", "stroke-width": 6 },
+                miniSvg,
+              );
+            }
+          }
+          miniSvg.querySelectorAll("[data-sector]").forEach((node) => {
+            node.style.pointerEvents = "none";
+          });
+        }
+
+        /* ============== DISPATCH ============== */
+        function render() {
+          if (view.type === "overview") {
+            backBtn.style.display = "none";
+            renderOverview(svg);
+          } else {
+            backBtn.style.display = "block";
+            renderSectorDetail(svg, view.sectorId);
+          }
+          renderMinimap();
+          hidePopup();
+        }
+
+        function setView(v) {
+          view = v;
+          render();
+        }
+
+        backBtn.addEventListener("click", () => setView({ type: "overview" }));
+
+        render();
+        updateCartUI();
+      })();
+    </script>
+  </body>
+</html>
