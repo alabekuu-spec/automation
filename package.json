@@ -1,19 +1,19 @@
 {
-  "name": "fb-automation",
+  "name": "enaadam-automation",
   "version": "1.0.0",
   "type": "module",
-  "description": "One-time Facebook post auto-liker, sharer and commenter using Playwright",
-  "main": "comment.js",
+  "description": "Multi-account enaadam.mn login with persistent, reusable browser sessions using Playwright",
+  "main": "enaadam-login.js",
   "scripts": {
-    "start": "node comment.js",
-    "login-all": "node login-all.js",
-    "join-groups": "node join-groups.js",
-    "share-to-groups": "node share-to-groups/share-to-groups.js",
+    "start": "node enaadam-login.js",
+    "enaadam-login": "node enaadam-login.js",
+    "enaadam-open": "node enaadam-open.js",
+    "enaadam-open-all": "node enaadam-open-all.js",
+    "enaadam-grab": "node enaadam-grab.js",
     "install-browser": "npx playwright install chromium"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "otpauth": "^9.5.0",
     "playwright": "^1.47.0"
   }
 }

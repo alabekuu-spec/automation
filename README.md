@@ -1,6 +1,14 @@
-# Facebook Post Auto-Liker, Sharer & Commenter
+# enaadam.mn Multi-Account Session Manager
 
-A Node.js + Playwright script that logs into one or more Facebook accounts, opens a specific post, likes it, shares it to the profile, and posts a comment — all in a visible browser window so you can watch each step. Supports multiple accounts in a single run, automatic 2FA via TOTP secrets, and per-account CLI filtering.
+A Node.js + Playwright tool that logs one or more accounts into
+[enaadam.mn](https://www.enaadam.mn) and **saves each account's session in its
+own persistent Chrome profile**, so every later run opens already logged in —
+no repeated SMS codes.
+
+enaadam.mn uses **phone-number + SMS one-time-code** login (no password). The
+code can't be automated, so you enter it by hand **once** per account in a
+visible browser window. After that the session is stored on disk in
+`profiles/enaadam-account-N/` and reused until the server-side session expires.
 
 ## Setup
 
@@ -13,47 +21,45 @@ A Node.js + Playwright script that logs into one or more Facebook accounts, open
    ```
    npm run install-browser
    ```
-4. Copy `.env.example` to `.env` and fill in your real values. `.env.example` is the canonical template — it documents every variable the script reads. The script:
-   - Scans for `FB_EMAIL_N` / `FB_PASSWORD_N` / `FB_TOTP_SECRET_N` triples (N = 1, 2, 3, …) and processes every filled-in slot.
-   - Slots whose values still start with `your_` are silently skipped, so you can leave unused slots untouched.
-   - Picks a comment for each account by shuffling the available `COMMENT_TEXT_N` variants.
+4. Copy `.env.example` to `.env` and add your phone number(s):
+   ```
+   ENAADAM_MOBILE_1=88001122
+   ```
+   Add `ENAADAM_MOBILE_2`, `_3`, … for more accounts. Empty slots and values
+   starting with `your_` are skipped.
 
-### `.env` variables
+## Usage
 
-| Variable | Required? | Purpose |
-|---|---|---|
-| `FB_EMAIL_N` | Yes (at least N=1) | Facebook email / phone for account N |
-| `FB_PASSWORD_N` | Yes (at least N=1) | Password for account N |
-| `FB_TOTP_SECRET_N` | Optional | Base32 TOTP secret for account N — enables fully automatic 2FA. Without it, the script pauses and waits for you to enter the code in the browser. |
-| `POST_URL` | Yes | Full URL of the post to like, share, and comment on. Shared across all accounts. |
-| `COMMENT_TEXT_N` | Yes (at least N=1) | Comment text variant N. Each account is randomly assigned exactly one variant. |
-
-### Getting a TOTP secret (for auto-2FA)
-
-1. Facebook → Settings → Security → Two-Factor Authentication.
-2. Remove your authenticator app, then re-add it.
-3. When Facebook displays the QR code, it also shows a text key — copy that.
-4. Paste it as `FB_TOTP_SECRET_N` in `.env`, then scan the QR with your authenticator app too so the account stays in sync.
-
-## Run
-
-Run every filled-in account:
+### Log in / save sessions
+Opens a visible browser per account, pre-fills the phone number, and triggers
+the SMS. **Type the SMS code in the window** — the script waits up to 5 minutes,
+then saves the session. Accounts that are already logged in are skipped.
 ```
-npm start
+npm run enaadam-login           # all filled-in accounts
+node enaadam-login.js 1 3       # only accounts 1 and 3
 ```
 
-Run a subset of accounts by passing their indices on the command line:
+### Open an already-logged-in account
+Opens a saved profile (already logged in) and leaves the window open.
 ```
-node comment.js 2          # only account 2
-node comment.js 2 5 7      # accounts 2, 5, and 7
+node enaadam-open.js 1          # open account 1
 ```
 
-Indices match the `N` in `FB_EMAIL_N`. Indices that don't exist or that still have placeholder credentials are reported and the script exits.
+## Files
+
+| File | Purpose |
+|---|---|
+| `enaadam-accounts.mjs` | Reads `ENAADAM_MOBILE_N` from `.env`. |
+| `lib/enaadam-login.mjs` | Login flow + logged-in-state detection. |
+| `enaadam-login.js` | Logs each account in (manual SMS code), saves the session. |
+| `enaadam-open.js` | Opens a saved, already-logged-in profile. |
+
+Each account's cookies/session live in `profiles/enaadam-account-N/`
+(git-ignored). Delete that folder to force a fresh login for an account.
 
 ## Notes
-
-- The browser opens **visibly** so you can watch each step.
-- Accounts are processed sequentially. If one account fails its login/navigation, the batch stops so you can fix the issue before running the rest.
-- If anything goes wrong, a `screenshot-accountN.png` (and additional `debug-*.png` files for 2FA / share failures) is saved in the project folder for debugging.
-- Facebook's UI changes often; if a selector breaks, update it in `comment.js`.
-- If an account has 2FA but no `FB_TOTP_SECRET_N` is configured, the script pauses up to 2 minutes for you to enter the code in the browser. Add the secret to make it fully automatic.
+- Browsers open **visibly** so you can complete the SMS step and watch.
+- Accounts are processed sequentially, one browser at a time.
+- On login failure a `screenshot-enaadam-login-accountN.png` is saved for debugging.
+- If `enaadam-open.js` reports "not logged in", the session expired — re-run
+  `enaadam-login.js` for that account.
