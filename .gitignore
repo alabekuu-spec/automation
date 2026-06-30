@@ -1,0 +1,17 @@
+# Secrets — NEVER commit
+.env
+.env.*
+!.env.example
+
+# Browser profiles (contain logged-in sessions/cookies)
+profiles/
+
+# Dependencies
+node_modules/
+
+# Debug screenshots
+*.png
+
+# Logs
+*.log
+npm-debug.log*
