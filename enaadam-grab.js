@@ -198,9 +198,11 @@ export function pageFindRedZone({ targetColor, targetNums, tol }) {
 // Tag up to `max` available (teal) seats. Returns how many were tagged. Only
 // considers ON-SCREEN seats and prefers the BOTTOM-most ones — top sectors clip
 // seats up under the fixed legend/header where they can't be clicked, so picking
-// the lowest visible seats keeps the click clear of overlays. Takes ONE object
+// the lowest visible seats keeps the click clear of overlays. `offset` rotates
+// the ordered candidate list so parallel accounts prefer DIFFERENT seats (it
+// wraps, so an account is never starved when seats run low). Takes ONE object
 // arg (page.evaluate only forwards a single argument).
-export function pageTagSeats({ availColor, tol, max }) {
+export function pageTagSeats({ availColor, tol, max, offset = 0 }) {
   function rgb(s) { const m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(s || ''); return m ? [+m[1], +m[2], +m[3]] : null; }
   function near(a, b) { const x = rgb(a), y = rgb(b); return x && y && Math.abs(x[0]-y[0])<=tol && Math.abs(x[1]-y[1])<=tol && Math.abs(x[2]-y[2])<=tol; }
   function colorOf(el) {
@@ -219,8 +221,11 @@ export function pageTagSeats({ availColor, tol, max }) {
     if (c && near(c, availColor) && !el.hasAttribute('data-grab-seat')) cands.push({ el, cy });
   }
   cands.sort((a, b) => b.cy - a.cy); // bottom-most (most reachable) first
+  // rotate by `offset` (wrapping) so different accounts prefer different seats
+  const start = cands.length ? (((offset % cands.length) + cands.length) % cands.length) : 0;
+  const ordered = cands.slice(start).concat(cands.slice(0, start));
   let tagged = 0;
-  for (const { el } of cands) {
+  for (const { el } of ordered) {
     if (tagged >= max) break;
     el.setAttribute('data-grab-seat', String(tagged + 1));
     tagged++;
@@ -296,12 +301,15 @@ async function gotoZoneMap(page, redColor) {
 // Grab up to `maxAdd` available seats in the CURRENT zone. For each seat:
 // click it → popup → click "Сагслах" (with a couple retries) → repeat. Returns
 // how many made it into the cart. Bails fast on a full zone (3 empty scans).
-export async function pickAvailableSeats(page, tag, availColor, maxAdd) {
+export async function pickAvailableSeats(page, tag, availColor, maxAdd, slot = 0, total = 1) {
   let added = 0;
   let emptyScans = 0;
   const seatDeadline = Date.now() + SEAT_PASS_MS;
   while (Date.now() < seatDeadline && added < maxAdd) {
-    const n = await page.evaluate(pageTagSeats, { availColor, tol: COLOR_TOL, max: 1 }).catch(() => 0);
+    // Stride by `total`: account `slot` prefers seat positions slot, slot+total,
+    // slot+2·total, … so concurrent accounts don't fight over the same seat.
+    const offset = slot + added * total;
+    const n = await page.evaluate(pageTagSeats, { availColor, tol: COLOR_TOL, max: 1, offset }).catch(() => 0);
     if (n > 0) {
       emptyScans = 0;
       let ok = false;
@@ -333,9 +341,15 @@ export async function pickAvailableSeats(page, tag, availColor, maxAdd) {
 }
 
 // One full sweep of the target zones. Returns seats carted this pass + which zone.
-async function grabPass(page, tag, redColor, availColor, deadline, need, probeRef) {
+// The sweep order is ROTATED by `slot` so parallel accounts start in different
+// zones (all zones are still covered — coverage is preserved, only the start
+// point differs), which keeps them from colliding on the same seats.
+async function grabPass(page, tag, redColor, availColor, deadline, need, probeRef, slot = 0, total = 1) {
   let carted = 0, usedZone = null, sawAnyZone = false;
-  for (const zoneN of TARGET_ZONES) {
+  const z = TARGET_ZONES.length;
+  const rot = z ? (((slot % z) + z) % z) : 0;
+  const zones = TARGET_ZONES.slice(rot).concat(TARGET_ZONES.slice(0, rot));
+  for (const zoneN of zones) {
     if (Date.now() >= deadline || carted >= need) break;
 
     // open this specific zone (poll briefly in case it's still rendering)
@@ -365,7 +379,7 @@ async function grabPass(page, tag, redColor, availColor, deadline, need, probeRe
       }
     }
 
-    const got = await pickAvailableSeats(page, tag, availColor, need - carted);
+    const got = await pickAvailableSeats(page, tag, availColor, need - carted, slot, total);
     carted += got;
     if (got > 0 && usedZone == null) usedZone = zoneN;
     if (carted >= need) break;
@@ -376,7 +390,7 @@ async function grabPass(page, tag, redColor, availColor, deadline, need, probeRe
 }
 
 // ── Per-account driver: WATCH → GRAB → HOLD, crash-proof ───────────
-async function grabForAccount(acc) {
+async function grabForAccount(acc, slot = 0, total = 1) {
   const userDataDir = path.join(PROFILES_DIR, `enaadam-account-${acc.index}`);
   if (!fs.existsSync(userDataDir)) return { acc, status: 'no_profile' };
 
@@ -415,7 +429,11 @@ async function grabForAccount(acc) {
           await delay(WATCH_POLL_MS + Math.floor(Math.random() * 400));
           continue;
         }
-        if (!everLive) { everLive = true; console.log(`  🟢 ${tag} event is LIVE — grabbing`); }
+        if (!everLive) {
+          everLive = true;
+          const startZone = TARGET_ZONES[((slot % TARGET_ZONES.length) + TARGET_ZONES.length) % TARGET_ZONES.length];
+          console.log(`  🟢 ${tag} event is LIVE — grabbing (starts at zone ${startZone}, seat stride ${total})`);
+        }
 
         // ── self-calibrate colors once ──────────────────────────────
         if (!calibrated) {
@@ -427,7 +445,7 @@ async function grabForAccount(acc) {
         }
 
         // ── PHASE 2: GRAB ── one sweep of the zones ─────────────────
-        const pass = await grabPass(page, tag, redColor, availColor, deadline, MAX_TICKETS - carted, probeRef);
+        const pass = await grabPass(page, tag, redColor, availColor, deadline, MAX_TICKETS - carted, probeRef, slot, total);
         carted += pass.carted;
         if (pass.usedZone != null && usedZone == null) usedZone = pass.usedZone;
         if (carted >= MAX_TICKETS) break;
@@ -497,7 +515,9 @@ async function main() {
   await waitUntilStart();
   console.log('👀 Watching for the event to go live (refreshing every browser)…');
 
-  const settledRaw = await Promise.allSettled(accounts.map((acc) => grabForAccount(acc)));
+  // slot = position in the running set, total = how many run in parallel — used
+  // to spread accounts across zones/seats so they don't collide on the same seat.
+  const settledRaw = await Promise.allSettled(accounts.map((acc, i) => grabForAccount(acc, i, accounts.length)));
   const results = settledRaw.map((r, i) =>
     r.status === 'fulfilled' ? r.value : { acc: accounts[i], status: `crash:${(r.reason?.message || r.reason).toString().slice(0, 60)}` });
 

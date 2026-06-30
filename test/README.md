@@ -15,12 +15,30 @@ from `../enaadam-zones.mjs`).
 
 ```sh
 # from the project root (C:\Users\hitech\Desktop\automation\automation)
-node test/test-grab-local.mjs            # headful (watch it work)
+node test/test-grab-local.mjs            # single-account flow, headful
 HEADLESS=true node test/test-grab-local.mjs
+
+node test/test-collision.mjs             # multi-account collision check, headless
+ACCOUNTS=4 node test/test-collision.mjs
+HEADLESS=false node test/test-collision.mjs
 ```
 
-A screenshot of the final state is written to `test/test-result.png`.
-Exit code is `0` when every gating stage passes.
+`test-grab-local.mjs` writes a screenshot to `test/test-result.png`. Both tests
+exit `0` only when everything passes.
+
+## Cross-account collision avoidance
+
+When all accounts run in parallel, `enaadam-grab.js` spreads them so they don't
+fight over the same seat:
+- each account **rotates its zone sweep order** by its slot (`grabPass`), so they
+  start in different zones (full coverage is preserved);
+- each account uses a **seat-pick stride** (`pickAvailableSeats` → `pageTagSeats`
+  `offset`), so even inside one zone they prefer different seats. The offset wraps,
+  so an account is never starved when seats run low.
+
+`test-collision.mjs` forces N accounts into the *same* zone (worst case) and
+asserts they cart **disjoint** seats. Example result (3 accounts, zone 1):
+`acc0 [1:14:1, 1:14:5]`, `acc1 [1:14:2, 1:14:7]`, `acc2 [1:14:3, 1:14:8]` — no clashes.
 
 ## Stages
 
